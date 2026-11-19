@@ -1,0 +1,35 @@
+{
+  "name": "cpcalc",
+  "version": "1.0.0",
+  "description": "CP Calc – calculator for competitive programmers",
+  "main": "index.js",
+  "scripts": {
+    "test": "node src/engine.test.js",
+    "build": "node scripts/build.mjs",
+    "cap:add": "npx cap add android",
+    "cap:sync": "npx cap sync android",
+    "android:release": "cd android && ./gradlew assembleRelease",
+    "android:sign": "node scripts/sign.mjs"
+  },
+  "keywords": [
+    "competitive-programming",
+    "calculator",
+    "bitwise"
+  ],
+  "type": "module",
+  "capacitor": {
+    "appId": "com.cpcalc.app",
+    "appName": "CP Calc",
+    "webDir": "www"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/cli": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.4"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}

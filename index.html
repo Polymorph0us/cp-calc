@@ -1,0 +1,144 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#12161f"><link rel="manifest" href="manifest.json"><link rel="icon" href="icon.svg">
+<title>CP Calc</title>
+<style>
+:root{--bg:#12161f;--card:#1b212d;--line:#2a3242;--fg:#e8eaf0;--dim:#8d96aa;--ac:#f5b84b;--bad:#ff7a7a;--ok:#7fd8a6;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px system-ui,sans-serif;padding:env(safe-area-inset-top) 12px env(safe-area-inset-bottom)}
+main{max-width:560px;margin:0 auto;padding:12px 0 48px}
+.top{display:flex;gap:6px;align-items:center;margin-bottom:10px}
+.top h1{font-size:17px;margin:0 auto 0 0}
+button,select{font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+button.on{border-color:var(--ac);color:var(--ac)}
+.in{display:flex;gap:6px}
+#inp{flex:1;min-width:0;font:18px ui-monospace,Menlo,monospace;background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:12px;padding:12px}
+#inp:focus{outline:2px solid var(--ac);outline-offset:1px}
+#res{font:600 26px ui-monospace,Menlo,monospace;word-break:break-all;margin:14px 0 6px;color:var(--ac)}
+#res.err{color:var(--bad);font-size:15px;font-weight:400}
+.rows div{display:flex;gap:12px;padding:7px 0;border-bottom:1px solid var(--line);font:13px ui-monospace,Menlo,monospace}
+.rows b{width:32px;color:var(--dim);font-weight:500;flex:none}
+.rows span{word-break:break-all}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:5px 0;scrollbar-width:none}
+.chips button{flex:none;font:14px ui-monospace,Menlo,monospace;padding:7px 11px}
+#grid{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin:14px 0 10px}
+#grid button{position:relative;padding:8px 0 12px;font:600 15px ui-monospace,Menlo,monospace;color:var(--dim)}
+#grid button.set{background:var(--ac);border-color:var(--ac);color:#12161f}
+#grid i{position:absolute;right:3px;bottom:1px;font:9px system-ui;font-style:normal;opacity:.7}
+.stats{display:flex;flex-wrap:wrap;gap:4px 16px;font:13px ui-monospace,Menlo,monospace;color:var(--dim)}
+.stats b{color:var(--fg);font-weight:500}
+h2{font-size:14px;color:var(--dim);margin:26px 0 8px;font-weight:600}
+.hist div{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font:13px ui-monospace,Menlo,monospace;cursor:pointer}
+.hist span:last-child{color:var(--ac);word-break:break-all;text-align:right}
+.est{display:flex;gap:6px}.est input{flex:1;min-width:0;font:15px ui-monospace,Menlo,monospace;background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:9px}
+#est{margin-top:8px;font-size:14px}.ok{color:var(--ok)}.warn{color:var(--ac)}.err{color:var(--bad)}
+</style></head><body><main>
+<div class="top"><h1>CP Calc</h1>
+<select id="w" aria-label="Bit width"><option value="0">∞ bit</option><option value="8">8 bit</option><option value="16">16 bit</option><option value="32">32 bit</option><option value="64">64 bit</option></select>
+<button id="sg"></button><button id="py"></button></div>
+<div class="in"><input id="inp" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="(1&lt;&lt;20) ^ 12345 % MOD"><button id="bs">⌫</button><button id="clr">C</button><button id="eq">=</button></div>
+<div id="chips"></div>
+<div id="res">0</div>
+<div class="rows" id="rows"></div>
+<div id="grid"></div>
+<div class="stats" id="stats"></div>
+<h2>Will it pass?</h2>
+<div class="est"><input id="n" placeholder="n, e.g. 2e5" autocomplete="off"><select id="cx"><option value="n">n</option><option value="nlogn">n log n</option><option value="nsqrt">n √n</option><option value="n2">n²</option><option value="n3">n³</option><option value="pow2">2ⁿ</option></select></div>
+<div id="est"></div>
+<h2>History</h2>
+<div class="hist" id="hist"></div>
+</main>
+<script>
+const $=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+let S={w:64,sg:true,py:false,h:[],last:'0'};
+try{Object.assign(S,JSON.parse(localStorage.getItem('cpc')))}catch(e){}
+const save=()=>{try{localStorage.setItem('cpc',JSON.stringify(S))}catch(e){}};
+const MOD=1000000007n,abs=x=>x<0n?-x:x,BW=()=>S.w||64;
+const mask=()=>(1n<<BigInt(BW()))-1n,U=x=>(S.w||x<0n)?x&mask():x;
+const wrap=v=>{if(!S.w)return v;const m=1n<<BigInt(S.w);v&=m-1n;return S.sg&&v>=m>>1n?v-m:v};
+const gcd=(a,b)=>{a=abs(a);b=abs(b);while(b)[a,b]=[b,a%b];return a};
+const mp=(b,e,m)=>{if(m<=0n)throw Error('modulus must be positive');let r=1n%m;b=((b%m)+m)%m;while(e>0n){if(e&1n)r=r*b%m;b=b*b%m;e>>=1n}return r};
+const inv=(a,m)=>{let[r0,r1]=[((a%m)+m)%m,m],[s0,s1]=[1n,0n];while(r1){const q=r0/r1;[r0,r1]=[r1,r0-q*r1];[s0,s1]=[s1,s0-q*s1]}if(r0!==1n)throw Error('no inverse');return((s0%m)+m)%m};
+const SP=[2n,3n,5n,7n,11n,13n,17n,19n,23n,29n,31n,37n];
+const isp=n=>{if(n<2n)return false;for(const p of SP){if(n===p)return true;if(n%p===0n)return false}let d=n-1n,r=0;while(!(d&1n)){d>>=1n;r++}for(const a of SP){let x=mp(a,d,n);if(x===1n||x===n-1n)continue;let ok=false;for(let i=1;i<r;i++){x=x*x%n;if(x===n-1n){ok=true;break}}if(!ok)return false}return true};
+const rho=n=>{if(n%2n===0n)return 2n;for(let c=1n;;c++){let x=2n,y=2n,d=1n;const f=v=>(v*v+c)%n;while(d===1n){x=f(x);y=f(f(y));d=gcd(x-y,n)}if(d!==n)return d}};
+const fmap=n=>{n=abs(n);const o=new Map(),add=p=>o.set(p,(o.get(p)||0)+1);if(n<2n)return o;
+ for(let p=2n;p<1000n&&p*p<=n;p++)while(n%p===0n){add(p);n/=p}
+ const go=m=>{if(m===1n)return;if(isp(m)){add(m);return}const d=rho(m);go(d);go(m/d)};go(n);return o};
+const factor=n=>n<2n&&n>-2n?String(n):[...fmap(n)].sort((a,b)=>a[0]<b[0]?-1:1).map(([p,e])=>e>1?`${p}^${e}`:`${p}`).join(' · ');
+const phi=n=>{let r=abs(n);for(const p of fmap(n).keys())r=r/p*(p-1n);return r};
+const isqrt=n=>{if(n<0n)throw Error('negative');if(n<2n)return n;let x=1n<<BigInt((n.toString(2).length+1)>>1);for(;;){const y=(x+n/x)>>1n;if(y>=x)return x;x=y}};
+const pop=x=>{let c=0;x=U(x);while(x){c+=Number(x&1n);x>>=1n}return BigInt(c)};
+const clz=x=>{x=U(x);return BigInt(Math.max(0,BW()-(x?x.toString(2).length:0)))};
+const ctz=x=>{x=U(x);if(!x)return BigInt(BW());let c=0n;while(!(x&1n)){x>>=1n;c++}return c};
+const lowbit=x=>{x=U(x);return x&-x};
+const hb=x=>{x=U(x);return x?BigInt(x.toString(2).length-1):-1n};
+const fact=(n,m=MOD)=>{if(n<0n||n>5000000n)throw Error('n out of range');let r=1n%m;for(let i=2n;i<=n;i++)r=r*i%m;return r};
+const ncr=(n,r,m=MOD)=>{if(r<0n||r>n)return 0n;if(n-r<r)r=n-r;if(r>5000000n)throw Error('r too large');let a=1n,b=1n;for(let i=0n;i<r;i++){a=a*((n-i)%m)%m;b=b*(i+1n)%m}return a*inv(b,m)%m};
+const fib=(n,m=0n)=>{if(n<0n)throw Error('n must be ≥ 0');const R=x=>m?((x%m)+m)%m:x;const f=k=>{if(!k)return[0n,1n];const[a,b]=f(k>>1n);const c=R(a*R(2n*b-a)),d=R(a*a+b*b);return k&1n?[d,R(c+d)]:[c,d]};return f(n)[0]};
+const F={gcd,lcm:(a,b)=>a&&b?abs(a/gcd(a,b)*b):0n,modpow:(b,e,m)=>e<0n?mp(inv(b,m),-e,m):mp(b,e,m),inv,isprime:n=>isp(n)?1n:0n,factor,phi,popcount:pop,clz,ctz,lowbit,hb,
+ setbit:(x,i)=>x|(1n<<i),clrbit:(x,i)=>x&~(1n<<i),flip:(x,i)=>x^(1n<<i),ncr,fact,fib,sqrt:isqrt,abs,log2:x=>{if(x<=0n)throw Error('log2 of non-positive');return BigInt(x.toString(2).length-1)},
+ min:(...a)=>a.reduce((p,c)=>c<p?c:p),max:(...a)=>a.reduce((p,c)=>c>p?c:p)};
+const C={MOD,MOD2:998244353n,INT_MAX:2147483647n,INT_MIN:-2147483648n,UINT_MAX:4294967295n,LLONG_MAX:(1n<<63n)-1n,LLONG_MIN:-(1n<<63n),ULLONG_MAX:(1n<<64n)-1n};
+
+function evaluate(s){
+ const t=[],re=/\s*(?:(0x[0-9a-f]+|0b[01]+|0o[0-7]+|\d+(?:e\d+)?)|([a-z_]\w*)|(\*\*|<<|>>|[-+*\/%&|^~(),]))/iy;
+ while(re.lastIndex<s.length){const at=re.lastIndex,m=re.exec(s);if(!m){if(/^\s*$/.test(s.slice(at)))break;throw Error('bad character')}
+  t.push(m[1]?{k:'n',v:m[1]}:m[2]?{k:'i',v:m[2]}:{k:'o',v:m[3]})}
+ let p=0;const pk=()=>t[p],nx=()=>t[p++],is=v=>pk()&&pk().k==='o'&&pk().v===v,ex=v=>{if(!is(v))throw Error('expected '+v);p++};
+ const dv=(a,b)=>{if(!b)throw Error('division by zero');let q=a/b;if(S.py&&a%b&&(a<0n)!==(b<0n))q--;return q};
+ const OP={'|':(a,b)=>a|b,'^':(a,b)=>a^b,'&':(a,b)=>a&b,'<<':(a,b)=>{if(b<0n||b>4096n)throw Error('bad shift');return a<<b},'>>':(a,b)=>{if(b<0n)throw Error('bad shift');return a>>b},'+':(a,b)=>a+b,'-':(a,b)=>a-b,'*':(a,b)=>a*b,'/':dv,'%':(a,b)=>a-dv(a,b)*b};
+ const L=(sub,ops)=>()=>{let a=sub();while(pk()&&pk().k==='o'&&ops.includes(pk().v)){const o=nx().v;a=OP[o](a,sub())}return a};
+ const unary=()=>{if(is('-')){p++;return -unary()}if(is('+')){p++;return unary()}if(is('~')){p++;return ~unary()}return pw()};
+ const pw=()=>{const b=prim();if(is('**')){p++;const e=unary();if(e<0n)throw Error('negative exponent');if(e>100000n)throw Error('exponent too large');return b**e}return b};
+ const mul=L(unary,['*','/','%']),add=L(mul,['+','-']),sh=L(add,['<<','>>']),an=L(sh,['&']),xr=L(an,['^']),or=L(xr,['|']);
+ const prim=()=>{const x=nx();if(!x)throw Error('unexpected end');
+  if(x.k==='n'){const m=/^(\d+)e(\d+)$/i.exec(x.v);return m?BigInt(m[1])*10n**BigInt(m[2]):BigInt(x.v)}
+  if(x.k==='i'){if(is('(')){const f=F[x.v.toLowerCase()];if(!f)throw Error('unknown function '+x.v);p++;const a=[];if(!is(')')){do a.push(or());while(is(',')&&++p)}ex(')');return f(...a)}
+   const u=x.v.toUpperCase();if(u==='ANS')return BigInt(S.last||'0');if(u in C)return C[u];throw Error('unknown name '+x.v)}
+  if(x.v==='('){const v=or();ex(')');return v}
+  throw Error('unexpected '+x.v)};
+ const r=or();if(p<t.length)throw Error('unexpected '+t[p].v);return r}
+
+const inp=$('#inp');let curv=null,curtxt=null;
+function calc(){
+ const s=inp.value.trim(),res=$('#res');res.classList.remove('err');curv=curtxt=null;
+ ['#rows','#grid','#stats'].forEach(q=>$(q).innerHTML='');
+ if(!s){res.textContent='0';return}
+ try{
+  const r=evaluate(s);
+  if(typeof r==='string'){res.textContent=curtxt=r;return}
+  const v=wrap(r);curv=v;curtxt=v.toString();res.textContent=curtxt;
+  const neg=!S.w&&v<0n,u=neg?-v:U(v),pre=neg?'-':'',pad=S.w||0;
+  const hx=u.toString(16).toUpperCase().padStart(pad/4,'0'),bn=u.toString(2).padStart(pad,'0'),oc=u.toString(8);
+  const g=x=>x.replace(/(?=(?:.{4})+$)/g,' ').trim();
+  $('#rows').innerHTML=[['dec',curtxt,curtxt],['hex',pre+g(hx),pre+'0x'+hx],['bin',pre+g(bn),pre+'0b'+bn],['oct',pre+oc,pre+'0o'+oc]].map(([k,d,c])=>`<div data-c="${c}"><b>${k}</b><span>${d}</span></div>`).join('');
+  if(S.w){let h='';const uu=U(v);for(let i=S.w-1;i>=0;i--){const b=Number((uu>>BigInt(i))&1n);h+=`<button data-i="${i}" class="${b?'set':''}">${b}<i>${i}</i></button>`}$('#grid').innerHTML=h}
+  $('#stats').innerHTML=[['popcount',pop(v)],['clz',clz(v)],['ctz',ctz(v)],['lowbit',lowbit(v)],['highest bit',hb(v)]].map(([k,x])=>`<span>${k} <b>${x}</b></span>`).join('');
+ }catch(e){res.textContent=e.message||String(e);res.classList.add('err')}
+}
+function ins(t){const i=inp.selectionStart??inp.value.length,j=inp.selectionEnd??i;inp.setRangeText(t,i,j,'end');inp.focus();calc()}
+const CH=[['&','|','^','~','<<','>>','%','**','(',')','ans'],['gcd(','lcm(','modpow(','inv(','isprime(','factor(','phi(','ncr(','fact(','fib(','sqrt(','log2(','min(','max(','abs('],['popcount(','clz(','ctz(','lowbit(','hb(','setbit(','clrbit(','flip('],['MOD','MOD2','INT_MAX','INT_MIN','UINT_MAX','LLONG_MAX','ULLONG_MAX']];
+$('#chips').innerHTML=CH.map(r=>`<div class="chips">${r.map(t=>`<button>${esc(t)}</button>`).join('')}</div>`).join('');
+$('#chips').onmousedown=e=>e.preventDefault();
+$('#chips').onclick=e=>{const b=e.target.closest('button');if(b)ins(b.textContent)};
+$('#bs').onmousedown=e=>e.preventDefault();
+$('#bs').onclick=()=>{const i=inp.selectionStart,j=inp.selectionEnd;if(i!==j)inp.setRangeText('',i,j,'end');else if(i>0)inp.setRangeText('',i-1,i,'end');inp.focus();calc()};
+$('#clr').onclick=()=>{inp.value='';calc();inp.focus()};
+function commit(){const s=inp.value.trim();if(curtxt===null||!s)return;S.h=[{e:s,r:curtxt},...S.h.filter(x=>x.e!==s)].slice(0,30);if(curv!==null)S.last=curtxt;save();hist()}
+$('#eq').onclick=commit;inp.oninput=calc;inp.onkeydown=e=>{if(e.key==='Enter')commit()};
+$('#grid').onclick=e=>{const b=e.target.closest('button');if(!b||curv===null)return;inp.value=wrap(U(curv)^(1n<<BigInt(b.dataset.i))).toString();calc()};
+$('#rows').onclick=e=>{const d=e.target.closest('div');if(d&&navigator.clipboard)navigator.clipboard.writeText(d.dataset.c)};
+$('#res').onclick=()=>{if(curtxt&&navigator.clipboard)navigator.clipboard.writeText(curtxt)};
+function hist(){$('#hist').innerHTML=S.h.map((h,i)=>`<div data-i="${i}"><span>${esc(h.e)}</span><span>${esc(h.r)}</span></div>`).join('')||'<div style="color:var(--dim);cursor:default">Press = to save a result here.</div>'}
+$('#hist').onclick=e=>{const d=e.target.closest('div[data-i]');if(d){inp.value=S.h[d.dataset.i].e;calc();inp.focus()}};
+function est(){const o=$('#est'),s=$('#n').value.trim();if(!s){o.textContent='';return}
+ try{const n=Number(evaluate(s)),f={n:x=>x,nlogn:x=>x*Math.log2(x),nsqrt:x=>x*Math.sqrt(x),n2:x=>x*x,n3:x=>x**3,pow2:x=>2**x}[$('#cx').value](n),sec=f/1e8;
+  o.className=sec<=1?'ok':sec<=5?'warn':'err';o.textContent=`about ${f.toExponential(2)} operations, ${sec<1?'under 1':sec.toFixed(1)} s at 1e8 per second: ${sec<=1?'should pass':sec<=5?'borderline':'likely TLE'}`}
+ catch(e){o.className='err';o.textContent=e.message}}
+$('#n').oninput=est;$('#cx').onchange=est;
+function ui(){$('#w').value=S.w;$('#sg').textContent=S.sg?'signed':'unsigned';$('#sg').classList.toggle('on',S.sg);$('#py').textContent=S.py?'Python / %':'C++ / %';$('#py').classList.toggle('on',S.py);save();calc()}
+$('#w').onchange=e=>{S.w=+e.target.value;ui()};$('#sg').onclick=()=>{S.sg=!S.sg;ui()};$('#py').onclick=()=>{S.py=!S.py;ui()};
+ui();hist();
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script></body></html>

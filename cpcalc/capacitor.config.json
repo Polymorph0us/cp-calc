@@ -1,0 +1,15 @@
+{
+  "appId": "com.cpcalc.app",
+  "appName": "CP Calc",
+  "webDir": "www",
+  "plugins": {
+    "StatusBar": {
+      "overlaysWebView": true,
+      "style": "LIGHT",
+      "backgroundColor": "#00000000"
+    }
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}

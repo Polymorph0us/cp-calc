@@ -1,0 +1,7 @@
+www/
+node_modules/
+android/.gradle/
+android/app/build/
+android/build/
+*.keystore
+!release.keystore

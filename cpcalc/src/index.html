@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#090014">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>CP Calc // 2088</title>
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ══ Outrun / Vaporwave Scenery ═════════════════════════════════════════ -->
+<div class="vapor-scenery" aria-hidden="true">
+  <div class="synth-sun"></div>
+  <div class="perspective-grid"></div>
+  <div class="crt-scanlines"></div>
+</div>
+
+<!-- ══ App Shell ═════════════════════════════════════════════════════════ -->
+<div id="app">
+
+  <!-- ── Screen: CALC ─────────────────────────────────────────────────── -->
+  <section id="screen-calc" class="screen active" role="main" aria-label="Calculator">
+
+    <!-- Top bar -->
+    <div id="top-bar" class="top-bar glass-panel">
+      <div class="terminal-dots">
+        <span class="dot dot-pink"></span>
+        <span class="dot dot-cyan"></span>
+        <span class="dot dot-orange"></span>
+      </div>
+      <div id="width-chips" class="chip-group" role="group" aria-label="Bit width">
+        <button class="chip" data-w="8"  id="chip-8">8</button>
+        <button class="chip" data-w="16" id="chip-16">16</button>
+        <button class="chip" data-w="32" id="chip-32">32</button>
+        <button class="chip active" data-w="64" id="chip-64">64</button>
+        <button class="chip" data-w="0"  id="chip-inf">∞</button>
+      </div>
+      <div id="sign-chips" class="chip-group" role="group" aria-label="Sign mode">
+        <button class="chip active" id="chip-signed">sgn</button>
+        <button class="chip" id="chip-unsigned">uns</button>
+      </div>
+      <button id="btn-history" class="icon-btn" aria-label="History">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+          <path d="M3 3v5h5"/><polyline points="12 7 12 12 15 15"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Display card -->
+    <div id="display" class="display glass-panel" role="region" aria-label="Calculator display">
+      <div class="terminal-bar">
+        <span class="terminal-title">&gt; REGISTER_01</span>
+        <span class="terminal-badge">C++ SEMANTICS</span>
+      </div>
+      <div id="expr-wrap">
+        <span class="prompt-sym">&gt;</span>
+        <div id="expr" role="textbox" aria-label="Expression" aria-readonly="true"></div>
+      </div>
+      <div id="result-wrap">
+        <div id="result" class="result dim" aria-live="polite" aria-atomic="true">0</div>
+      </div>
+      <div id="hex-line" class="alt-line mono" aria-label="Hex value"></div>
+      <div id="bin-line" class="alt-line mono" aria-label="Binary value"></div>
+    </div>
+
+    <!-- Quick row -->
+    <div id="quick-row" class="quick-row" role="toolbar" aria-label="Quick insert">
+      <button class="qkey" data-ins="," aria-label="comma">,</button>
+      <button class="qkey" data-ins="ans" aria-label="last answer">ans</button>
+      <button class="qkey" id="btn-0x" aria-label="hex prefix">0x</button>
+      <button class="qkey" id="btn-0b" aria-label="bin prefix">0b</button>
+      <button class="qkey" data-ins="e" aria-label="exponent">e</button>
+      <button class="qkey" id="btn-fx" aria-label="functions">f(x)</button>
+    </div>
+
+    <!-- Hex quick row (shown after typing 0x) -->
+    <div id="hex-quick-row" class="quick-row hidden" role="toolbar" aria-label="Hex digits">
+      <button class="qkey hex-key" data-ins="A">A</button>
+      <button class="qkey hex-key" data-ins="B">B</button>
+      <button class="qkey hex-key" data-ins="C">C</button>
+      <button class="qkey hex-key" data-ins="D">D</button>
+      <button class="qkey hex-key" data-ins="E">E</button>
+      <button class="qkey hex-key" data-ins="F">F</button>
+      <button class="qkey" id="btn-fx2" aria-label="functions">f(x)</button>
+    </div>
+
+    <!-- Keypad (5 columns x 5 rows) -->
+    <div id="keypad" class="keypad glass-panel" role="group" aria-label="Keypad">
+      <!-- row 1 -->
+      <button class="key key-ac" id="key-ac" aria-label="All clear">AC</button>
+      <button class="key key-back" id="key-back" aria-label="Backspace">⌫</button>
+      <button class="key key-arith" data-ins="%" aria-label="modulo">%</button>
+      <button class="key key-arith" data-ins="/" aria-label="divide">/</button>
+      <button class="key key-bit" data-ins="<<" aria-label="left shift">&lt;&lt;</button>
+      <!-- row 2 -->
+      <button class="key key-digit" data-ins="7">7</button>
+      <button class="key key-digit" data-ins="8">8</button>
+      <button class="key key-digit" data-ins="9">9</button>
+      <button class="key key-arith" data-ins="*" aria-label="multiply">×</button>
+      <button class="key key-bit" data-ins=">>" aria-label="right shift">&gt;&gt;</button>
+      <!-- row 3 -->
+      <button class="key key-digit" data-ins="4">4</button>
+      <button class="key key-digit" data-ins="5">5</button>
+      <button class="key key-digit" data-ins="6">6</button>
+      <button class="key key-arith" data-ins="-" aria-label="minus">−</button>
+      <button class="key key-bit" data-ins="&" aria-label="bitwise AND">&amp;</button>
+      <!-- row 4 -->
+      <button class="key key-digit" data-ins="1">1</button>
+      <button class="key key-digit" data-ins="2">2</button>
+      <button class="key key-digit" data-ins="3">3</button>
+      <button class="key key-arith" data-ins="+" aria-label="plus">+</button>
+      <button class="key key-bit" data-ins="|" aria-label="bitwise OR">|</button>
+      <!-- row 5 -->
+      <button class="key key-digit" data-ins="0">0</button>
+      <button class="key key-paren" id="key-paren" aria-label="parenthesis">( )</button>
+      <button class="key key-bit" data-ins="^" aria-label="XOR">^</button>
+      <button class="key key-eq" id="key-eq" aria-label="equals">=</button>
+      <button class="key key-bit" data-ins="~" aria-label="bitwise NOT">~</button>
+    </div>
+
+  </section>
+
+  <!-- ── Screen: BITS (Studio & Simulator) ─────────────────────────────── -->
+  <section id="screen-bits" class="screen" role="main" aria-label="Bit manipulation and simulation">
+
+    <div id="bits-header" class="top-bar glass-panel">
+      <div class="terminal-dots">
+        <span class="dot dot-pink"></span>
+        <span class="dot dot-cyan"></span>
+        <span class="dot dot-orange"></span>
+      </div>
+      <div class="bits-mode-nav" role="tablist">
+        <button class="chip bit-tab active" data-bmode="grid" id="btab-grid">GRID</button>
+        <button class="chip bit-tab" data-bmode="sim" id="btab-sim">SIM</button>
+        <button class="chip bit-tab" data-bmode="submasks" id="btab-submasks">SUBMASKS</button>
+      </div>
+      <button id="btn-undo" class="chip hidden" aria-label="Undo bit flip">Undo</button>
+    </div>
+
+    <!-- Mode 1: 8-column Bit Grid View -->
+    <div id="bview-grid" class="bview active">
+      <!-- 8-column bit grid (up to 8 rows for 64 bits) -->
+      <div id="bit-grid" class="bit-grid glass-panel" role="grid" aria-label="Bit grid">
+        <!-- filled by JS -->
+      </div>
+
+      <!-- Action chips -->
+      <div id="bit-actions" class="bit-actions">
+        <button class="chip bit-action" data-act="shl1">&lt;&lt;1</button>
+        <button class="chip bit-action" data-act="shr1">&gt;&gt;1</button>
+        <button class="chip bit-action" data-act="not">NOT</button>
+        <button class="chip bit-action" data-act="lowbit">x&amp;-x</button>
+        <button class="chip bit-action" data-act="clrlow">x&amp;(x-1)</button>
+        <button class="chip bit-action" data-act="zero">zero</button>
+        <button class="chip bit-action" data-act="ones">all 1s</button>
+      </div>
+    </div>
+
+    <!-- Mode 2: Interactive Mask Simulator View -->
+    <div id="bview-sim" class="bview">
+      <div class="sim-panel glass-panel">
+        <div class="terminal-bar">
+          <span class="terminal-title">&gt; BITWISE_TRANSITION_SIMULATOR</span>
+        </div>
+        <div class="sim-row">
+          <span class="sim-tag">OPERAND A</span>
+          <span class="sim-val mono" id="sim-val-a">0</span>
+        </div>
+        <div class="sim-ops-group">
+          <button class="chip sim-op active" data-simop="&amp;">&amp; (AND)</button>
+          <button class="chip sim-op" data-simop="|">| (OR)</button>
+          <button class="chip sim-op" data-simop="^">^ (XOR)</button>
+          <button class="chip sim-op" data-simop="<<">&lt;&lt; (SHL)</button>
+          <button class="chip sim-op" data-simop=">>">&gt;&gt; (SHR)</button>
+        </div>
+        <div class="sim-row">
+          <span class="sim-tag">MASK B</span>
+          <span class="sim-val mono" id="sim-val-b">0xFF</span>
+        </div>
+        <div class="sim-presets">
+          <button class="chip sim-preset" data-preset="0xFF">0xFF</button>
+          <button class="chip sim-preset" data-preset="0xFFFF">0xFFFF</button>
+          <button class="chip sim-preset" data-preset="lowbit">LOWBIT</button>
+          <button class="chip sim-preset" data-preset="1">1</button>
+          <button class="chip sim-preset" data-preset="inv">~A</button>
+        </div>
+        <div class="sim-res-box">
+          <span class="sim-res-label">&gt; TRANSITION_RESULT:</span>
+          <div class="sim-res-val mono" id="sim-res-val">0</div>
+        </div>
+        <button id="btn-apply-sim" class="chip cta-btn">EXECUTE &amp; APPLY TO CALC</button>
+      </div>
+    </div>
+
+    <!-- Mode 3: Bitmask DP Submask Generator View -->
+    <div id="bview-submasks" class="bview">
+      <div class="submask-panel glass-panel">
+        <div class="terminal-bar">
+          <span class="terminal-title">&gt; SUBMASK_ITERATOR // s = (s - 1) &amp; M</span>
+        </div>
+        <div class="submask-meta">
+          <div><span class="sm-lbl">BASE MASK M:</span> <span class="mono sm-val" id="sm-base-m">0</span></div>
+          <div><span class="sm-lbl">SUBMASKS:</span> <span class="mono sm-val" id="sm-count">1</span></div>
+        </div>
+        <div class="submask-card">
+          <div class="sm-counter" id="sm-step-info">SUBMASK #1</div>
+          <div class="sm-readout">
+            <span class="sm-tag">s (DEC):</span>
+            <span class="sm-main mono" id="sm-s-dec">0</span>
+          </div>
+          <div class="sm-readout">
+            <span class="sm-tag">s (HEX):</span>
+            <span class="sm-hex mono" id="sm-s-hex">0x0</span>
+          </div>
+          <!-- Visual bit pattern of submask -->
+          <div class="sm-bits-visual mono" id="sm-bits-visual">
+            <!-- visual bits rendered by JS -->
+          </div>
+        </div>
+        <div class="submask-actions">
+          <button class="chip sm-btn" id="btn-sm-prev">&lt; PREV</button>
+          <button class="chip sm-btn active" id="btn-sm-next">NEXT &gt;</button>
+          <button class="chip sm-btn" id="btn-sm-reset">RESET</button>
+          <button class="chip sm-btn" id="btn-sm-auto">AUTO</button>
+          <button class="chip sm-btn" id="btn-sm-push">PUSH</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats below actions: popcount, clz, ctz, lowbit, highest bit -->
+    <div id="bits-stats" class="bits-stats glass-panel">
+      <div class="bstat"><span class="bsl">pop</span><span class="bsv mono" id="bs-pop">0</span></div>
+      <div class="bstat"><span class="bsl">clz</span><span class="bsv mono" id="bs-clz">64</span></div>
+      <div class="bstat"><span class="bsl">ctz</span><span class="bsv mono" id="bs-ctz">64</span></div>
+      <div class="bstat"><span class="bsl">lowbit</span><span class="bsv mono" id="bs-lb">0</span></div>
+      <div class="bstat"><span class="bsl">hb</span><span class="bsv mono" id="bs-hb">-1</span></div>
+    </div>
+
+    <!-- Readouts: DEC / HEX / BIN / OCT (full-width scrollable binary so numbers never clip!) -->
+    <div id="bits-display" class="display glass-panel bits-display">
+      <div class="bits-readout-row">
+        <div class="bits-readout-half" id="readout-dec-box" title="Tap to copy DEC">
+          <span class="rl">DEC</span>
+          <span class="rv mono" id="bd-dec">0</span>
+        </div>
+        <div class="bits-readout-half" id="readout-hex-box" title="Tap to copy HEX">
+          <span class="rl">HEX</span>
+          <span class="rv mono" id="bd-hex">0x0</span>
+        </div>
+      </div>
+      <!-- BIN row with horizontal scrolling container so 64-bit binary never clips -->
+      <div class="bits-readout-full" id="readout-bin-box" title="Tap to copy BIN">
+        <div class="bits-bin-header">
+          <span class="rl">BIN</span>
+          <span class="bin-hint">64-BIT SCROLLABLE</span>
+        </div>
+        <div class="bits-bin-scroll mono" id="bd-bin">0b0</div>
+      </div>
+      <div class="bits-readout-row">
+        <div class="bits-readout-half" id="readout-oct-box" title="Tap to copy OCT">
+          <span class="rl">OCT</span>
+          <span class="rv mono" id="bd-oct">0o0</span>
+        </div>
+        <div class="bits-readout-half bits-copy-wrap">
+          <button class="chip bit-copy-chip" id="btn-copy-bits">COPY RAW</button>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ── Screen: EST ──────────────────────────────────────────────────── -->
+  <section id="screen-est" class="screen" role="main" aria-label="Complexity estimator">
+
+    <div class="top-bar glass-panel">
+      <div class="terminal-dots">
+        <span class="dot dot-pink"></span>
+        <span class="dot dot-cyan"></span>
+        <span class="dot dot-orange"></span>
+      </div>
+      <span class="bits-title">ESTIMATOR // WILL_IT_PASS.EXE</span>
+    </div>
+
+    <div id="est-display" class="display glass-panel est-display">
+      <div class="terminal-bar">
+        <span class="terminal-title">&gt; INPUT_ANALYSIS</span>
+      </div>
+      <div id="est-n-wrap" class="est-n-wrap">
+        <span class="est-label">&gt; n =</span>
+        <div id="est-n" class="est-n mono" role="textbox" aria-label="n value" aria-readonly="true">—</div>
+      </div>
+      <div id="est-result" class="est-result mono" aria-live="polite" aria-atomic="true"></div>
+    </div>
+
+    <div id="est-complexity" class="est-chips">
+      <button class="chip" data-cx="n">n</button>
+      <button class="chip" data-cx="nlogn">n log n</button>
+      <button class="chip" data-cx="nsqrt">n √n</button>
+      <button class="chip active" data-cx="n2">n²</button>
+      <button class="chip" data-cx="n3">n³</button>
+      <button class="chip" data-cx="pow2">2ⁿ</button>
+    </div>
+
+    <div class="est-ops-row">
+      <span class="est-label">&gt; ops/s</span>
+      <div id="est-ops-display" class="est-ops-display mono" role="textbox" aria-label="Operations per second" aria-readonly="true">1e8</div>
+    </div>
+
+    <!-- Est keypad -->
+    <div id="est-keypad" class="keypad glass-panel est-keypad" role="group" aria-label="Number input">
+      <button class="key key-digit" data-est="7">7</button>
+      <button class="key key-digit" data-est="8">8</button>
+      <button class="key key-digit" data-est="9">9</button>
+      <button class="key key-back est-back">⌫</button>
+
+      <button class="key key-digit" data-est="4">4</button>
+      <button class="key key-digit" data-est="5">5</button>
+      <button class="key key-digit" data-est="6">6</button>
+      <button class="key key-arith" data-est="e">e</button>
+
+      <button class="key key-digit" data-est="1">1</button>
+      <button class="key key-digit" data-est="2">2</button>
+      <button class="key key-digit" data-est="3">3</button>
+      <button class="key key-ac est-ac">AC</button>
+
+      <button class="key key-digit est-zero" data-est="0">0</button>
+      <button class="key key-digit est-ops-btn" id="est-ops-toggle">ops/s</button>
+    </div>
+
+  </section>
+
+  <!-- ── Tab bar ──────────────────────────────────────────────────────── -->
+  <nav id="tab-bar" class="tab-bar glass-panel" role="tablist" aria-label="Screens">
+    <button class="tab active" data-tab="calc" id="tab-calc" role="tab" aria-selected="true" aria-controls="screen-calc">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"/><line x1="4" y1="10" x2="20" y2="10"/><line x1="10" y1="10" x2="10" y2="20"/></svg>
+      <span>CALC</span>
+    </button>
+    <button class="tab" data-tab="bits" id="tab-bits" role="tab" aria-selected="false" aria-controls="screen-bits">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="8" width="4" height="8" rx="1"/><rect x="10" y="6" width="4" height="12" rx="1"/><rect x="17" y="9" width="4" height="6" rx="1"/></svg>
+      <span>BITS</span>
+    </button>
+    <button class="tab" data-tab="est" id="tab-est" role="tab" aria-selected="false" aria-controls="screen-est">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>EST</span>
+    </button>
+  </nav>
+
+</div><!-- #app -->
+
+<!-- ══ Sheets ════════════════════════════════════════════════════════════ -->
+
+<!-- f(x) sheet -->
+<div id="fx-overlay" class="sheet-overlay" aria-hidden="true"></div>
+<div id="fx-sheet" class="bottom-sheet glass-panel" role="dialog" aria-label="Functions" aria-hidden="true">
+  <div class="drag-handle" id="fx-drag-handle" aria-hidden="true"></div>
+  <div class="terminal-bar">
+    <div class="terminal-dots">
+      <span class="dot dot-pink"></span>
+      <span class="dot dot-cyan"></span>
+      <span class="dot dot-orange"></span>
+    </div>
+    <span class="terminal-title">FUNCTION_CATALOG.SYS</span>
+  </div>
+  <div id="fx-tabs" class="sheet-tabs" role="tablist">
+    <button class="sheet-tab active" data-cat="numtheory" role="tab">Number Theory</button>
+    <button class="sheet-tab" data-cat="bits" role="tab">Bits</button>
+    <button class="sheet-tab" data-cat="const" role="tab">Constants</button>
+  </div>
+  <div id="fx-content" class="sheet-content"></div>
+</div>
+
+<!-- History sheet -->
+<div id="hist-overlay" class="sheet-overlay" aria-hidden="true"></div>
+<div id="hist-sheet" class="bottom-sheet glass-panel" role="dialog" aria-label="History" aria-hidden="true">
+  <div class="drag-handle" aria-hidden="true"></div>
+  <div class="terminal-bar">
+    <div class="terminal-dots">
+      <span class="dot dot-pink"></span>
+      <span class="dot dot-cyan"></span>
+      <span class="dot dot-orange"></span>
+    </div>
+    <span class="terminal-title">REGISTER_LOG.EXE</span>
+  </div>
+  <div class="sheet-header">
+    <h2 class="sheet-title">COMMAND HISTORY</h2>
+    <button id="btn-clear-hist" class="chip chip-danger">PURGE ALL</button>
+  </div>
+  <div id="hist-list" class="hist-list" role="list"></div>
+</div>
+
+<!-- Copied toast -->
+<div id="toast" class="toast glass-panel" aria-live="assertive" aria-atomic="true"></div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

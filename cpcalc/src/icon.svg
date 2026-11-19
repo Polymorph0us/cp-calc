@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a1040"/>
+      <stop offset="100%" stop-color="#0b3b4a"/>
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" rx="22" fill="url(#bg)"/>
+  <rect x="18" y="28" width="64" height="44" rx="8" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="2.5"/>
+  <line x1="18" y1="46" x2="82" y2="46" stroke="rgba(255,255,255,.2)" stroke-width="2"/>
+  <line x1="40" y1="46" x2="40" y2="72" stroke="rgba(255,255,255,.2)" stroke-width="2"/>
+  <text x="28" y="40" font-family="system-ui" font-size="9" fill="#f5b84b" font-weight="600">CP</text>
+  <text x="72" y="40" font-family="system-ui" font-size="7" fill="rgba(255,255,255,.5)" text-anchor="middle">64</text>
+  <text x="29" y="62" font-family="monospace" font-size="11" fill="rgba(255,255,255,.8)">&gt;&gt;</text>
+  <text x="59" y="62" font-family="monospace" font-size="11" fill="#4ec9e0">&amp;</text>
+</svg>
